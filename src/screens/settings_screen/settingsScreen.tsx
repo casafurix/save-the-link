@@ -1,5 +1,5 @@
-import { useState, type SyntheticEvent } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useRef, useState, type ChangeEvent, type SyntheticEvent } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
   Box,
@@ -12,17 +12,21 @@ import {
   Tab,
   Tabs,
   Typography,
+  Alert,
 } from "@mui/material";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import LanguageIcon from "@mui/icons-material/Language";
 import { useNavigate } from "react-router";
-import { useAuth } from "../../context/authContext";
-import { useThemeMode } from "../../context/themeModeContext";
-import { useToast } from "../../context/toastContext";
+import { useAuth } from "../../context/useAuth";
+import { useThemeMode } from "../../context/useThemeMode";
+import { useToast } from "../../context/useToast";
 import { DeleteAccountRequest } from "../../context/api";
 import { getErrorMessage } from "../../lib/getErrorMessage";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import * as workspaceApi from "../../api/workspace";
+import { prepareWorkspaceImport, type WorkspaceExport, type WorkspaceImportResult } from "../../models/workspace";
+import { pagesQueryKey } from "../../features/pages/pagesQueries";
 
 const GeneralTab = () => {
   const { user, logout } = useAuth();
@@ -103,6 +107,117 @@ const GeneralTab = () => {
   );
 };
 
+export const DataTab = () => {
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [pendingImport, setPendingImport] = useState<WorkspaceExport | null>(null);
+  const [result, setResult] = useState<WorkspaceImportResult | null>(null);
+
+  const exportMutation = useMutation({
+    mutationFn: () => workspaceApi.exportWorkspace().then((response) => response.data),
+    onSuccess: (workspace) => {
+      const blob = new Blob([JSON.stringify(workspace, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `save-the-link-workspace-v${workspace.version}.json`;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    },
+    onError: (error) =>
+      showToast(getErrorMessage(error, "Couldn't export your workspace."), "error"),
+  });
+
+  const importMutation = useMutation({
+    mutationFn: (workspace: WorkspaceExport) =>
+      workspaceApi.importWorkspace(workspace).then((response) => response.data),
+    onSuccess: (summary) => {
+      setResult(summary);
+      setPendingImport(null);
+      queryClient.invalidateQueries({ queryKey: pagesQueryKey });
+    },
+    onError: (error) =>
+      showToast(getErrorMessage(error, "Couldn't import that workspace."), "error"),
+  });
+
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      const parsed = prepareWorkspaceImport(JSON.parse(await file.text()));
+      if (!parsed) throw new Error("Invalid workspace export");
+      setResult(null);
+      setPendingImport(parsed);
+    } catch {
+      showToast("Choose a valid, versioned workspace JSON file.", "error");
+    }
+  };
+
+  return (
+    <>
+      <Stack sx={{ gap: 1.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Export workspace</Typography>
+        <Typography color="text.secondary">
+          Download a versioned JSON backup of your pages and links.
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => exportMutation.mutate()}
+          disabled={exportMutation.isPending}
+          sx={{ alignSelf: "flex-start" }}
+        >
+          Download JSON
+        </Button>
+      </Stack>
+
+      <Divider sx={{ my: 4 }} />
+
+      <Stack sx={{ gap: 1.5 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Import workspace</Typography>
+        <Typography color="text.secondary">
+          Upload a workspace export. The server determines how imported pages and links are merged.
+        </Typography>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          aria-label="Workspace JSON file"
+          hidden
+          onChange={handleFile}
+        />
+        <Button
+          variant="outlined"
+          onClick={() => fileInput.current?.click()}
+          disabled={importMutation.isPending}
+          sx={{ alignSelf: "flex-start" }}
+        >
+          Upload JSON
+        </Button>
+        {result && (
+          <Alert severity="success">
+            Imported {result.pagesCreated} pages and {result.blocksCreated} links.
+          </Alert>
+        )}
+      </Stack>
+
+      <ConfirmDialog
+        open={pendingImport !== null}
+        title="Import this workspace?"
+        description={`This will send workspace export version ${pendingImport?.version ?? ""} to the server. Existing data may be affected according to the server's import rules.`}
+        confirmLabel="Import workspace"
+        confirmDisabled={importMutation.isPending}
+        onCancel={() => setPendingImport(null)}
+        onConfirm={() => {
+          if (pendingImport) importMutation.mutate(pendingImport);
+        }}
+      />
+    </>
+  );
+};
+
 const AboutTab = () => {
   return (
     <Stack sx={{ gap: 4 }}>
@@ -176,9 +291,9 @@ const AboutTab = () => {
 };
 
 const SettingsScreen = () => {
-  const [tab, setTab] = useState<"general" | "about">("general");
+  const [tab, setTab] = useState<"general" | "data" | "about">("general");
 
-  const handleTabChange = (_event: SyntheticEvent, value: "general" | "about") => {
+  const handleTabChange = (_event: SyntheticEvent, value: "general" | "data" | "about") => {
     setTab(value);
   };
 
@@ -190,10 +305,11 @@ const SettingsScreen = () => {
 
       <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 4 }}>
         <Tab value="general" label="General" />
+        <Tab value="data" label="Data" />
         <Tab value="about" label="About" />
       </Tabs>
 
-      {tab === "general" ? <GeneralTab /> : <AboutTab />}
+      {tab === "general" ? <GeneralTab /> : tab === "data" ? <DataTab /> : <AboutTab />}
     </Box>
   );
 };

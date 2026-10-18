@@ -1,5 +1,5 @@
 import { Box, Typography } from "@mui/material";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/useAuth";
 
 const HomeScreen = () => {
   const { user } = useAuth();

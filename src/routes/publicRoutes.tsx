@@ -1,7 +1,7 @@
 import type React from "react";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router";
-import { useAuth } from "../context/authContext";
+import { useAuth } from "../context/useAuth";
 
 interface PublicRoutesProps {
   children: ReactNode;

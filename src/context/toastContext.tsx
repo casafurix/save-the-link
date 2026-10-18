@@ -1,19 +1,10 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useState,
   type ReactNode,
 } from "react";
 import { Alert, Snackbar } from "@mui/material";
-
-type ToastSeverity = "success" | "error" | "info";
-
-interface ToastContextType {
-  showToast: (message: string, severity?: ToastSeverity) => void;
-}
-
-const ToastContext = createContext<ToastContextType | null>(null);
+import { ToastContext, type ToastSeverity } from "./useToast";
 
 interface ToastState {
   open: boolean;
@@ -60,13 +51,3 @@ const ToastProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export default ToastProvider;
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-
-  if (context === null) {
-    throw new Error("useToast must be used inside ToastProvider");
-  }
-
-  return context;
-};

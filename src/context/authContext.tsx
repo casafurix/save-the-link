@@ -1,23 +1,8 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import React, { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User } from "../models/user";
 import { GetMe, LogoutRequest } from "./api";
-
-interface AuthContextType {
-  user: User | null;
-  login: (user: User) => void;
-  logout: () => void;
-  isLoggedIn: boolean;
-  isLoading: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
+import { AuthContext } from "./useAuth";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -63,13 +48,3 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 export default AuthProvider;
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-
-  if (context === null) {
-    throw new Error("use authContext inside AuthProvider");
-  }
-
-  return context;
-};

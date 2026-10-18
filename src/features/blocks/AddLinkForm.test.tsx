@@ -15,9 +15,11 @@ import AddLinkForm from "./AddLinkForm";
 
 vi.mock("../../api/blocks", () => ({
   createBlock: vi.fn(),
+  importBlocks: vi.fn(),
 }));
 
 const createBlock = vi.mocked(blocksApi.createBlock);
+const importBlocks = vi.mocked(blocksApi.importBlocks);
 
 const duplicateError = new AxiosError(
   "Conflict",
@@ -116,5 +118,37 @@ describe("AddLinkForm", () => {
       "The server could not save this link.",
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("imports one URL per line with duplicate preference and reports the summary", async () => {
+    importBlocks.mockResolvedValueOnce({
+      data: {
+        created: [{ id: "block-1" }],
+        warnings: [{ index: 1, url: "https://two.example", code: "duplicate_url", message: "Duplicate" }],
+        failed: [{ index: 2, url: "https://failed.example", code: "create_failed", message: "Failed" }],
+      },
+    } as AxiosResponse);
+    createBlock.mockResolvedValueOnce({ data: { id: "block-2" } } as AxiosResponse);
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.click(screen.getByRole("button", { name: "Import multiple links" }));
+    await user.type(
+      screen.getByLabelText("URLs"),
+      " https://one.example \n\nhttps://two.example",
+    );
+    await user.click(screen.getByRole("checkbox", { name: /Allow links/ }));
+    await user.click(screen.getByRole("button", { name: "Import links" }));
+
+    await waitFor(() => {
+      expect(importBlocks).toHaveBeenCalledWith("page-1", {
+        urls: ["https://one.example", "https://two.example"],
+      });
+      expect(createBlock).toHaveBeenCalledWith("page-1", {
+        url: "https://two.example",
+        allowDuplicate: true,
+      });
+    });
+    expect(await screen.findByText("Created 2, skipped 0, failed 1.")).toBeVisible();
   });
 });

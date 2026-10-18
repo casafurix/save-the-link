@@ -19,6 +19,9 @@ const modules = {
   ],
 };
 
+// Keep Quill's document model limited to the controls exposed by this editor.
+const formats = ["bold", "italic", "underline", "strike", "list", "link", "blockquote"];
+
 const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) => {
   const theme = useTheme();
 
@@ -44,6 +47,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         onChange={onChange}
         placeholder={placeholder}
         modules={modules}
+        formats={formats}
       />
     </div>
   );

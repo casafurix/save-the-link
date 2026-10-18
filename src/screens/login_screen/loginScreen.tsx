@@ -6,8 +6,7 @@ import { Link } from "react-router";
 import { LoginUser } from "./api";
 import type { LoginBodyType, LoginResponseType } from "./model";
 import { useMutation } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/useAuth";
 import AuthLayout from "../../layouts/AuthLayout";
 import PasswordField from "../../components/PasswordField";
 import { getErrorMessage } from "../../lib/getErrorMessage";
@@ -34,14 +33,11 @@ const LoginScreen = () => {
 
   const loginMutation = useMutation({
     mutationFn: (body: LoginBodyType) => LoginUser(body.email, body.password),
+    onSuccess: (response) => {
+      const user = response.data as LoginResponseType;
+      login({ username: user.username, email: user.email });
+    },
   });
-
-  useEffect(() => {
-    if (loginMutation.isSuccess) {
-      const resp = loginMutation.data.data as LoginResponseType;
-      login({ username: resp.username, email: resp.email });
-    }
-  }, [loginMutation.isSuccess]);
 
   const onSubmit = (data: LoginForm) => {
     loginMutation.mutate(data);

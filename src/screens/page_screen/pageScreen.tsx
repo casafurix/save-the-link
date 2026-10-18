@@ -15,17 +15,12 @@ import { useNavigate, useParams } from "react-router";
 import { usePage, useUpdatePage } from "../../features/pages/pagesQueries";
 import { useBlocks } from "../../features/blocks/blocksQueries";
 import AddLinkForm from "../../features/blocks/AddLinkForm";
-import LinkCard from "../../features/blocks/LinkCard";
+import SortableBlockGrid from "../../features/blocks/SortableBlockGrid";
+import { blockGridSx } from "../../features/blocks/blockGridStyles";
 import EditBlockDialog from "../../features/blocks/EditBlockDialog";
 import ShareDialog from "../../features/pages/ShareDialog";
 import type { Page } from "../../models/page";
 import type { Block } from "../../models/block";
-
-const gridSx = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-  gap: 2,
-};
 
 const PageEditor = ({ page }: { page: Page }) => {
   const updatePage = useUpdatePage();
@@ -184,23 +179,21 @@ const PageEditor = ({ page }: { page: Page }) => {
       )}
 
       {blocksLoading ? (
-        <Box sx={gridSx}>
+        <Box sx={blockGridSx}>
           {[1, 2, 3].map((key) => (
             <Skeleton key={key} variant="rounded" height={180} />
           ))}
         </Box>
       ) : hasContent ? (
-        <Box sx={gridSx}>
-          {createPending && <Skeleton variant="rounded" height={180} />}
-          {visibleBlocks?.map((block) => (
-            <LinkCard
-              key={block.id}
-              block={block}
-              pageId={page.id}
-              onEdit={setEditingBlock}
-            />
-          ))}
-        </Box>
+        <>
+          <SortableBlockGrid
+            blocks={visibleBlocks ?? []}
+            pageId={page.id}
+            onEdit={setEditingBlock}
+            canReorder={!normalizedQuery && !activeTag}
+            showPending={createPending}
+          />
+        </>
       ) : (
         <Box sx={{ mt: 6, textAlign: "center" }}>
           <Typography color="text.secondary">

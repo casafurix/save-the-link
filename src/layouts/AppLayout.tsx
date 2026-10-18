@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Box, IconButton } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { Outlet, useLocation } from "react-router";
@@ -6,17 +6,13 @@ import Sidebar from "./Sidebar";
 import { dotGridSx } from "../theme/texture";
 
 const AppLayout = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [drawerLocationKey, setDrawerLocationKey] = useState<string | null>(null);
   const location = useLocation();
-
-  // Selecting a page (or any other nav action) should close the overlay drawer.
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
+  const mobileOpen = drawerLocationKey === location.key;
 
   return (
     <Box sx={{ display: "flex" }}>
-      <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
+      <Sidebar mobileOpen={mobileOpen} onCloseMobile={() => setDrawerLocationKey(null)} />
       <Box
         component="main"
         sx={(theme) => ({
@@ -28,7 +24,7 @@ const AppLayout = () => {
         })}
       >
         <IconButton
-          onClick={() => setMobileOpen(true)}
+          onClick={() => setDrawerLocationKey(location.key)}
           aria-label="Open menu"
           sx={{
             display: { xs: "inline-flex", sm: "none" },

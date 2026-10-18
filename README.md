@@ -155,3 +155,9 @@ For local development, create `.env.local` in the frontend with:
 ```bash
 VITE_SERVER_HOST=http://localhost:8080
 ```
+
+## Security notes
+
+Quill 2.0.3 retains a low-severity HTML-export advisory with no non-downgrade fix.
+The editor limits formats to its toolbar allowlist and descriptions are sanitized both
+before persistence and again before rendering.

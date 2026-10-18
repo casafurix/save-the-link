@@ -22,3 +22,21 @@ export interface UpdateBlockInput {
   tags?: string[];
   order?: number;
 }
+
+export interface BulkImportInput {
+  urls: string[];
+  allowDuplicates: boolean;
+}
+
+export interface BulkImportIssue {
+  index: number;
+  url: string;
+  code: string;
+  message: string;
+}
+
+export interface BulkImportResult {
+  created: Block[];
+  warnings: BulkImportIssue[];
+  failed: BulkImportIssue[];
+}

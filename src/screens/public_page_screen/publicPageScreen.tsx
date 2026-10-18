@@ -20,17 +20,12 @@ import {
   usePages,
   useUnbookmarkPage,
 } from "../../features/pages/pagesQueries";
-import LinkCard from "../../features/blocks/LinkCard";
+import SortableBlockGrid from "../../features/blocks/SortableBlockGrid";
+import { blockGridSx } from "../../features/blocks/blockGridStyles";
 import EditBlockDialog from "../../features/blocks/EditBlockDialog";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../../context/useAuth";
 import { dotGridSx } from "../../theme/texture";
 import type { Block } from "../../models/block";
-
-const gridSx = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-  gap: 2,
-};
 
 // Anonymous visitors land on a shared page with no app chrome at all — this is
 // their only way to discover that "Save The Link" is a real product they can
@@ -240,24 +235,22 @@ const PublicPageScreen = () => {
 
         <Box sx={{ mt: canEdit ? 0 : 4 }}>
           {blocksLoading ? (
-            <Box sx={gridSx}>
+            <Box sx={blockGridSx}>
               {[1, 2, 3].map((key) => (
                 <Skeleton key={key} variant="rounded" height={180} />
               ))}
             </Box>
           ) : hasContent ? (
-            <Box sx={gridSx}>
-              {createPending && <Skeleton variant="rounded" height={180} />}
-              {blocks?.map((block) => (
-                <LinkCard
-                  key={block.id}
-                  block={block}
-                  pageId={page.id}
-                  onEdit={setEditingBlock}
-                  readOnly={!canEdit}
-                />
-              ))}
-            </Box>
+            <>
+              <SortableBlockGrid
+                blocks={blocks ?? []}
+                pageId={page.id}
+                onEdit={setEditingBlock}
+                canReorder={canEdit}
+                readOnly={!canEdit}
+                showPending={createPending}
+              />
+            </>
           ) : (
             <Stack sx={{ alignItems: "center", mt: 6 }}>
               <Typography color="text.secondary">No links here yet.</Typography>

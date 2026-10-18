@@ -15,17 +15,43 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import { useNavigate, useParams } from "react-router";
+import { useIsMutating } from "@tanstack/react-query";
 import type { PageTreeNode } from "./buildPageTree";
-import { useCreatePage, useDeletePage, useUpdatePage } from "./pagesQueries";
+import {
+  reorderPagesMutationKey,
+  useCreatePage,
+  useDeletePage,
+  useReorderPages,
+  useUpdatePage,
+} from "./pagesQueries";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { getMovedItemOrder } from "../../lib/reorder";
 
 interface PageTreeItemProps {
   node: PageTreeNode;
   depth: number;
+  reorderDisabled: boolean;
 }
 
-const PageTreeItem = ({ node, depth }: PageTreeItemProps) => {
+const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
   const navigate = useNavigate();
   const { pageId } = useParams();
   const [expanded, setExpanded] = useState(true);
@@ -33,6 +59,10 @@ const PageTreeItem = ({ node, depth }: PageTreeItemProps) => {
   const [draftTitle, setDraftTitle] = useState(node.title);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: node.id,
+    disabled: reorderDisabled,
+  });
 
   const createPage = useCreatePage();
   const updatePage = useUpdatePage();
@@ -74,6 +104,8 @@ const PageTreeItem = ({ node, depth }: PageTreeItemProps) => {
   return (
     <>
       <ListItemButton
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
         data-page-id={node.id}
         selected={isActive}
         onClick={() => navigate(`/pages/${node.id}`)}
@@ -81,6 +113,7 @@ const PageTreeItem = ({ node, depth }: PageTreeItemProps) => {
           pl: 1.5 + depth * 2,
           py: 0.5,
           borderRadius: 1,
+          opacity: isDragging ? 0.65 : 1,
         }}
       >
         <IconButton
@@ -134,6 +167,20 @@ const PageTreeItem = ({ node, depth }: PageTreeItemProps) => {
         )}
 
         <Box sx={{ display: "flex", flexShrink: 0 }}>
+          <IconButton
+            size="small"
+            aria-label={`Reorder ${node.title || "Untitled"}`}
+            disabled={reorderDisabled}
+            onClick={(event) => event.stopPropagation()}
+            {...attributes}
+            {...listeners}
+            sx={{
+              cursor: reorderDisabled ? "default" : isDragging ? "grabbing" : "grab",
+              touchAction: "none",
+            }}
+          >
+            <DragIndicatorIcon fontSize="small" />
+          </IconButton>
           <IconButton
             size="small"
             onClick={handleAddSubpage}
@@ -190,14 +237,47 @@ const PageTreeItem = ({ node, depth }: PageTreeItemProps) => {
 
       {hasChildren && (
         <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <List disablePadding>
-            {node.children.map((child) => (
-              <PageTreeItem key={child.id} node={child} depth={depth + 1} />
-            ))}
-          </List>
+          <PageTreeList nodes={node.children} depth={depth + 1} />
         </Collapse>
       )}
     </>
+  );
+};
+
+interface PageTreeListProps {
+  nodes: PageTreeNode[];
+  depth: number;
+}
+
+export const PageTreeList = ({ nodes, depth }: PageTreeListProps) => {
+  const reorderPages = useReorderPages();
+  const reorderPending = useIsMutating({ mutationKey: reorderPagesMutationKey }) > 0;
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (reorderPending || reorderPages.isPending || !over || active.id === over.id) return;
+    const update = getMovedItemOrder(nodes, String(active.id), String(over.id));
+    if (update) reorderPages.mutate(update);
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={nodes.map(({ id }) => id)} strategy={verticalListSortingStrategy}>
+        <List disablePadding>
+          {nodes.map((node) => (
+            <PageTreeItem
+              key={node.id}
+              node={node}
+              depth={depth}
+              reorderDisabled={reorderPending}
+            />
+          ))}
+        </List>
+      </SortableContext>
+    </DndContext>
   );
 };
 
