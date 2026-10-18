@@ -6,12 +6,15 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
+import type { ButtonProps } from "@mui/material";
 
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
   description: string;
   confirmLabel?: string;
+  confirmColor?: ButtonProps["color"];
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -21,6 +24,8 @@ const ConfirmDialog = ({
   title,
   description,
   confirmLabel = "Confirm",
+  confirmColor = "error",
+  confirmDisabled = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) => {
@@ -32,7 +37,12 @@ const ConfirmDialog = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>Cancel</Button>
-        <Button onClick={onConfirm} color="error" variant="contained">
+        <Button
+          onClick={onConfirm}
+          color={confirmColor}
+          variant="contained"
+          disabled={confirmDisabled}
+        >
           {confirmLabel}
         </Button>
       </DialogActions>

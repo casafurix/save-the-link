@@ -5,8 +5,10 @@ import type { Block, UpdateBlockInput } from "../models/block";
 export const listBlocks = (pageId: string) =>
   httpClient.get<Block[]>(`${pagesEndpoint}/${pageId}/blocks`);
 
-export const createBlock = (pageId: string, url: string) =>
-  httpClient.post<Block>(`${pagesEndpoint}/${pageId}/blocks`, { url });
+export const createBlock = (
+  pageId: string,
+  input: { url: string; allowDuplicate: boolean },
+) => httpClient.post<Block>(`${pagesEndpoint}/${pageId}/blocks`, input);
 
 export const updateBlock = (blockId: string, updates: UpdateBlockInput) =>
   httpClient.patch<Block>(`${blocksEndpoint}/${blockId}`, updates);

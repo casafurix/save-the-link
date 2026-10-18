@@ -1,20 +1,19 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import {
   Box,
   Button,
   CircularProgress,
   Skeleton,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
-import AddLinkIcon from "@mui/icons-material/AddLink";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import { Link, useParams } from "react-router";
 import { usePublicBlocks, usePublicPage } from "../../features/public/publicQueries";
-import { useBlocks, useCreateBlock } from "../../features/blocks/blocksQueries";
+import { useBlocks } from "../../features/blocks/blocksQueries";
+import AddLinkForm from "../../features/blocks/AddLinkForm";
 import {
   useBookmarkPage,
   useBookmarks,
@@ -155,8 +154,7 @@ const PublicPageScreen = () => {
       ? true
       : publicBlocksQuery.isLoading;
 
-  const createBlock = useCreateBlock(page?.id ?? "");
-  const [url, setUrl] = useState("");
+  const [createPending, setCreatePending] = useState(false);
   const [editingBlock, setEditingBlock] = useState<Block | null>(null);
 
   // A page you own already lives in your own sidebar — bookmarking is only
@@ -182,17 +180,6 @@ const PublicPageScreen = () => {
     } else {
       bookmarkPage.mutate(page.id);
     }
-  };
-
-  const handleAddLink = (event: FormEvent) => {
-    event.preventDefault();
-    const trimmed = url.trim();
-
-    if (!trimmed) {
-      return;
-    }
-
-    createBlock.mutate(trimmed, { onSuccess: () => setUrl("") });
   };
 
   if (pageLoading) {
@@ -228,7 +215,7 @@ const PublicPageScreen = () => {
     );
   }
 
-  const hasContent = (blocks && blocks.length > 0) || createBlock.isPending;
+  const hasContent = (blocks && blocks.length > 0) || createPending;
 
   return (
     <Box sx={(theme) => ({ minHeight: "100dvh", ...dotGridSx(theme) })}>
@@ -248,34 +235,7 @@ const PublicPageScreen = () => {
         </Typography>
 
         {canEdit && (
-          <Box
-            component="form"
-            onSubmit={handleAddLink}
-            sx={{ display: "flex", gap: 1, mt: 4, mb: 4 }}
-          >
-            <TextField
-              placeholder="Paste a link to save it…"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              fullWidth
-              size="small"
-            />
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={!url.trim() || createBlock.isPending}
-              startIcon={
-                createBlock.isPending ? (
-                  <CircularProgress size={16} color="inherit" />
-                ) : (
-                  <AddLinkIcon />
-                )
-              }
-              sx={{ flexShrink: 0 }}
-            >
-              Save
-            </Button>
-          </Box>
+          <AddLinkForm pageId={page.id} onPendingChange={setCreatePending} />
         )}
 
         <Box sx={{ mt: canEdit ? 0 : 4 }}>
@@ -287,7 +247,7 @@ const PublicPageScreen = () => {
             </Box>
           ) : hasContent ? (
             <Box sx={gridSx}>
-              {createBlock.isPending && <Skeleton variant="rounded" height={180} />}
+              {createPending && <Skeleton variant="rounded" height={180} />}
               {blocks?.map((block) => (
                 <LinkCard
                   key={block.id}

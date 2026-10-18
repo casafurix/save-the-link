@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as blocksApi from "../../api/blocks";
 import type { UpdateBlockInput } from "../../models/block";
@@ -5,6 +6,16 @@ import { useToast } from "../../context/toastContext";
 import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export const blocksQueryKey = (pageId: string) => ["blocks", pageId] as const;
+
+export interface CreateBlockInput {
+  url: string;
+  allowDuplicate: boolean;
+}
+
+export const isDuplicateUrlConflict = (error: unknown) =>
+  axios.isAxiosError<{ code?: string }>(error) &&
+  error.response?.status === 409 &&
+  error.response.data?.code === "duplicate_url";
 
 export const useBlocks = (pageId: string | undefined) =>
   useQuery({
@@ -18,8 +29,8 @@ export const useCreateBlock = (pageId: string) => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (url: string) =>
-      blocksApi.createBlock(pageId, url).then((response) => response.data),
+    mutationFn: (input: CreateBlockInput) =>
+      blocksApi.createBlock(pageId, input).then((response) => response.data),
     onSuccess: (block) => {
       queryClient.invalidateQueries({ queryKey: blocksQueryKey(pageId) });
       if (block.fetchStatus === "failed") {
@@ -28,8 +39,11 @@ export const useCreateBlock = (pageId: string) => {
         showToast("Link saved");
       }
     },
-    onError: (error) =>
-      showToast(getErrorMessage(error, "Couldn't save that link."), "error"),
+    onError: (error) => {
+      if (!isDuplicateUrlConflict(error)) {
+        showToast(getErrorMessage(error, "Couldn't save that link."), "error");
+      }
+    },
   });
 };
 
