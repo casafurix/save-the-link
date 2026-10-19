@@ -20,7 +20,7 @@ import {
 } from "../../models/publicPage";
 import { usePublicPagesList } from "./publicQueries";
 
-export const SPOTLIGHT_INTERVAL_MS = 7_000;
+export const SPOTLIGHT_INTERVAL_MS = 5_000;
 const EMPTY_PUBLIC_PAGES: PublicPageSummary[] = [];
 
 interface FeaturedCollectionProps {
