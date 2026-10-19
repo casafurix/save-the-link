@@ -30,7 +30,7 @@ import BookmarkRemoveIcon from "@mui/icons-material/BookmarkRemove";
 import PublicIcon from "@mui/icons-material/Public";
 import CloseIcon from "@mui/icons-material/Close";
 import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../context/useAuth";
 import { useThemeMode } from "../context/useThemeMode";
 import {
@@ -124,6 +124,7 @@ const LogoMorphButton = ({ label, onClick, placement = "bottom", action }: LogoM
 
 const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { user, logout } = useAuth();
@@ -176,6 +177,12 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
   }, []);
 
   const tree = pages ? buildPageTree(pages) : [];
+  const exploreActive = location.pathname === "/explore";
+
+  const handleExplore = () => {
+    navigate("/explore");
+    if (isMobile) onCloseMobile();
+  };
 
   const handleNewPage = async () => {
     const created = await createPage.mutateAsync({ title: "Untitled" });
@@ -265,6 +272,19 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
       </Stack>
 
       <Divider />
+
+      <List disablePadding sx={{ px: 1, pt: 1 }}>
+        <ListItemButton
+          selected={exploreActive}
+          onClick={handleExplore}
+          sx={{ borderRadius: 1.5, px: 1.25, py: 1 }}
+        >
+          <PublicIcon fontSize="small" sx={{ mr: 1.25 }} />
+          <Typography variant="body2" sx={{ fontWeight: exploreActive ? 700 : 600 }}>
+            Explore
+          </Typography>
+        </ListItemButton>
+      </List>
 
       <Box sx={{ flex: 1, overflowY: "auto", py: 1 }}>
         {isLoading ? (
@@ -415,6 +435,17 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         <Tooltip title="New page" placement="right">
           <IconButton size="small" onClick={handleNewPage} aria-label="New page">
             <AddIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Explore public library" placement="right">
+          <IconButton
+            size="small"
+            onClick={handleExplore}
+            aria-label="Explore public library"
+            color={exploreActive ? "primary" : "default"}
+            sx={{ bgcolor: exploreActive ? "action.selected" : undefined }}
+          >
+            <PublicIcon fontSize="small" />
           </IconButton>
         </Tooltip>
 

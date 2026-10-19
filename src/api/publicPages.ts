@@ -13,3 +13,12 @@ export const getPublicBlocks = (slug: string) =>
 
 export const listPublicPages = () =>
   httpClient.get<PublicPageSummary[]>(publicPagesEndpoint);
+
+export interface PublicPagesListParams {
+  limit: number;
+  offset: number;
+  q: string;
+}
+
+export const listPublicPagesPage = (params: PublicPagesListParams) =>
+  httpClient.get<PublicPageSummary[]>(publicPagesEndpoint, { params });
