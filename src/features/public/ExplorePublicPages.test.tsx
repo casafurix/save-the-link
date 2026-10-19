@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, useLocation } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicPageSummary } from "../../models/publicPage";
 import { ExplorePublicPagesView, SPOTLIGHT_INTERVAL_MS } from "./ExplorePublicPages";
@@ -44,10 +44,13 @@ const mockMediaQueries = ({ desktop = true, reducedMotion = false } = {}) => {
   );
 };
 
+const Location = () => <span data-testid="location">{useLocation().pathname}</span>;
+
 const renderDiscovery = (collectionPages = pages) =>
   render(
     <MemoryRouter>
       <ExplorePublicPagesView pages={collectionPages} />
+      <Location />
     </MemoryRouter>,
   );
 
@@ -60,21 +63,26 @@ afterEach(() => {
 });
 
 describe("public discovery", () => {
-  it("shows attribution, selection controls, and a clear link for the spotlight", () => {
+  it("links the spotlight and every collection card to their public pages", () => {
     renderDiscovery();
 
     expect(screen.getAllByText("by @maya").length).toBeGreaterThan(0);
     expect(screen.getAllByText("by @lin").length).toBeGreaterThan(0);
     expect(screen.getAllByText("by Unknown creator").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toHaveAttribute(
       "href",
       "/p/design-systems",
     );
-    expect(screen.getAllByRole("link")).toHaveLength(1);
-    expect(screen.getByRole("button", { name: /feature the quiet web by lin/i })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    expect(
+      screen.getByRole("link", { name: "Open Design systems collection by @maya" }),
+    ).toHaveAttribute("href", "/p/design-systems");
+    expect(
+      screen.getByRole("link", { name: "Open The quiet web collection by @lin" }),
+    ).toHaveAttribute("href", "/p/quiet-web");
+    expect(
+      screen.getByRole("link", { name: "Open Unknown origin collection by Unknown creator" }),
+    ).toHaveAttribute("href", "/p/unknown-origin");
+    expect(screen.getAllByRole("link")).toHaveLength(4);
     expect(
       screen.getByRole("button", { name: /show design systems in spotlight/i }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -89,7 +97,7 @@ describe("public discovery", () => {
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS));
 
-    expect(screen.getByRole("link", { name: /open the quiet web collection/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open The quiet web collection" })).toHaveAttribute(
       "href",
       "/p/quiet-web",
     );
@@ -102,24 +110,26 @@ describe("public discovery", () => {
 
     fireEvent.mouseEnter(section);
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS));
-    expect(screen.getByRole("link", { name: /open the quiet web collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open The quiet web collection" })).toBeVisible();
   });
 
   it("pauses while focused and resets when focus leaves", () => {
     vi.useFakeTimers();
     renderDiscovery();
 
-    const quietWebChoice = screen.getByRole("button", { name: /feature the quiet web by lin/i });
+    const quietWebChoice = screen.getByRole("link", {
+      name: "Open The quiet web collection by @lin",
+    });
     fireEvent.focus(quietWebChoice);
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS * 2));
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toBeVisible();
 
     fireEvent.blur(quietWebChoice, { relatedTarget: null });
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS - 1));
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toBeVisible();
 
     act(() => vi.advanceTimersByTime(1));
-    expect(screen.getByRole("link", { name: /open the quiet web collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open The quiet web collection" })).toBeVisible();
   });
 
   it("stays persistently paused until rotation is played again", () => {
@@ -133,7 +143,7 @@ describe("public discovery", () => {
     );
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS * 2));
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: /play spotlight auto-rotation/i }));
     expect(screen.getByRole("button", { name: /pause spotlight auto-rotation/i })).toHaveAttribute(
@@ -142,22 +152,35 @@ describe("public discovery", () => {
     );
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS));
-    expect(screen.getByRole("link", { name: /open the quiet web collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open The quiet web collection" })).toBeVisible();
   });
 
-  it("promotes a selected card immediately and restarts the timer", () => {
+  it("navigates from a collection card without changing the spotlight", () => {
     vi.useFakeTimers();
     renderDiscovery();
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS - 1_000));
-    fireEvent.click(screen.getByRole("button", { name: /feature the quiet web by lin/i }));
-    expect(screen.getByRole("link", { name: /open the quiet web collection/i })).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("link", { name: "Open The quiet web collection by @lin" }),
+    );
+
+    expect(screen.getByTestId("location")).toHaveTextContent("/p/quiet-web");
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toBeVisible();
+  });
+
+  it("changes the spotlight from an indicator and restarts the timer", () => {
+    vi.useFakeTimers();
+    renderDiscovery();
+
+    act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS - 1_000));
+    fireEvent.click(screen.getByRole("button", { name: /show the quiet web in spotlight/i }));
+    expect(screen.getByRole("link", { name: "Open The quiet web collection" })).toBeVisible();
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS - 1));
-    expect(screen.getByRole("link", { name: /open the quiet web collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open The quiet web collection" })).toBeVisible();
 
     act(() => vi.advanceTimersByTime(1));
-    expect(screen.getByRole("link", { name: /open unknown origin collection/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open Unknown origin collection" })).toHaveAttribute(
       "href",
       "/p/unknown-origin",
     );
@@ -169,7 +192,7 @@ describe("public discovery", () => {
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS * 10));
 
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toBeVisible();
     expect(screen.queryByLabelText("Choose a spotlight collection")).not.toBeInTheDocument();
   });
 
@@ -180,7 +203,7 @@ describe("public discovery", () => {
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS * 2));
 
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toBeVisible();
     expect(screen.getByRole("button", { name: /play spotlight auto-rotation/i })).toBeDisabled();
   });
 
@@ -191,7 +214,7 @@ describe("public discovery", () => {
 
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS * 2));
 
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open Design systems collection" })).toBeVisible();
     expect(
       screen.queryByRole("button", { name: /spotlight auto-rotation/i }),
     ).not.toBeInTheDocument();

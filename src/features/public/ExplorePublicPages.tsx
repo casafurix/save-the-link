@@ -2,7 +2,6 @@ import { useEffect, useState, type FocusEvent } from "react";
 import {
   Alert,
   Box,
-  Button,
   IconButton,
   Skeleton,
   Stack,
@@ -30,7 +29,9 @@ interface FeaturedCollectionProps {
 
 const FeaturedCollection = ({ page }: FeaturedCollectionProps) => (
   <Box
-    key={page.id}
+    component={Link}
+    to={`/p/${page.slug}`}
+    aria-label={`Open ${page.title || "Untitled"} collection`}
     sx={{
       display: "flex",
       minHeight: { xs: 220, md: 236 },
@@ -41,11 +42,23 @@ const FeaturedCollection = ({ page }: FeaturedCollectionProps) => (
       borderColor: "primary.main",
       borderRadius: 2,
       bgcolor: "background.default",
+      color: "text.primary",
+      textDecoration: "none",
       boxShadow: "0 14px 36px rgba(36, 82, 224, 0.12)",
+      transition: "border-color 160ms ease, box-shadow 160ms ease",
       animation: "spotlight-enter 180ms ease-out",
       "@keyframes spotlight-enter": {
         from: { opacity: 0, transform: "translateY(5px)" },
         to: { opacity: 1, transform: "translateY(0)" },
+      },
+      "&:hover": {
+        borderColor: "primary.dark",
+        boxShadow: "0 16px 40px rgba(36, 82, 224, 0.18)",
+      },
+      "&:focus-visible": {
+        outline: "3px solid",
+        outlineColor: "primary.main",
+        outlineOffset: 3,
       },
       "@media (prefers-reduced-motion: reduce)": { animation: "none" },
     }}
@@ -65,15 +78,7 @@ const FeaturedCollection = ({ page }: FeaturedCollectionProps) => (
       >
         {page.icon ?? <PublicIcon fontSize="medium" />}
       </Box>
-      <Button
-        component={Link}
-        to={`/p/${page.slug}`}
-        variant="outlined"
-        endIcon={<ArrowOutwardIcon fontSize="small" />}
-        aria-label={`Open ${page.title || "Untitled"} collection`}
-      >
-        Open collection
-      </Button>
+      <ArrowOutwardIcon aria-hidden="true" color="primary" />
     </Stack>
     <Box sx={{ mt: 3 }}>
       <Typography
@@ -102,16 +107,13 @@ interface CollectionChoiceProps {
   page: PublicPageSummary;
   selected: boolean;
   index: number;
-  onSelect: () => void;
 }
 
-const CollectionChoice = ({ page, selected, index, onSelect }: CollectionChoiceProps) => (
+const CollectionChoice = ({ page, selected, index }: CollectionChoiceProps) => (
   <Box
-    component="button"
-    type="button"
-    onClick={onSelect}
-    aria-label={`Feature ${page.title || "Untitled"} by ${page.creatorUsername}`}
-    aria-pressed={selected}
+    component={Link}
+    to={`/p/${page.slug}`}
+    aria-label={`Open ${page.title || "Untitled"} collection by ${formatCreatorUsername(page.creatorUsername)}`}
     sx={{
       display: "flex",
       minWidth: 0,
@@ -128,6 +130,7 @@ const CollectionChoice = ({ page, selected, index, onSelect }: CollectionChoiceP
       bgcolor: "background.paper",
       font: "inherit",
       textAlign: "left",
+      textDecoration: "none",
       cursor: "pointer",
       boxShadow: selected ? "0 8px 20px rgba(36, 82, 224, 0.1)" : "none",
       opacity: 0,
@@ -410,7 +413,6 @@ export const ExplorePublicPagesView = ({
                 page={page}
                 index={index}
                 selected={index === selectedIndex}
-                onSelect={() => setSelectedPageId(page.id)}
               />
             ))}
           </Box>
