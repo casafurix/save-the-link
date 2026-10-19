@@ -11,6 +11,7 @@ const HomeScreen = lazy(() => import("../screens/home_screen/home_screen"));
 const PageScreen = lazy(() => import("../screens/page_screen/pageScreen"));
 const PublicPageScreen = lazy(() => import("../screens/public_page_screen/publicPageScreen"));
 const SettingsScreen = lazy(() => import("../screens/settings_screen/settingsScreen"));
+const ExplorePublicLibrary = lazy(() => import("../screens/explore_public_library/ExplorePublicLibrary"));
 
 const routeFallback = (
   <Box sx={{ display: "flex", justifyContent: "center", pt: 8, width: "100%" }}>
@@ -47,6 +48,7 @@ export const MainRoutes = () => {
         <Route path="/home" element={<Suspense fallback={routeFallback}><HomeScreen /></Suspense>} />
         <Route path="/pages/:pageId" element={<Suspense fallback={routeFallback}><PageScreen /></Suspense>} />
         <Route path="/settings" element={<Suspense fallback={routeFallback}><SettingsScreen /></Suspense>} />
+        <Route path="/explore" element={<Suspense fallback={routeFallback}><ExplorePublicLibrary /></Suspense>} />
       </Route>
       <Route path="/p/:slug" element={<Suspense fallback={routeFallback}><PublicPageScreen /></Suspense>} />
       <Route path="/" element={<Navigate to="/home" replace />} />
