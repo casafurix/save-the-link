@@ -14,9 +14,9 @@ import {
 } from "@mui/material";
 import BookmarkBorderIcon from "@mui/icons-material/BookmarkBorder";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import PublicIcon from "@mui/icons-material/Public";
 import SearchIcon from "@mui/icons-material/Search";
+import { Link } from "react-router";
 import type { PublicPageSummary } from "../../models/publicPage";
 import { formatCreatorUsername } from "../../models/publicPage";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
@@ -134,12 +134,63 @@ export const ExplorePublicLibraryView = ({
             const isBookmarked = bookmarkedPageIds.has(page.id);
             const title = page.title || "Untitled";
             return (
-              <Card key={page.id} variant="outlined" sx={{ minWidth: 0, minHeight: 220, display: "flex", flexDirection: "column", bgcolor: "background.paper" }}>
+              <Card
+                key={page.id}
+                variant="outlined"
+                sx={{
+                  position: "relative",
+                  minWidth: 0,
+                  minHeight: 220,
+                  display: "flex",
+                  flexDirection: "column",
+                  bgcolor: "background.paper",
+                  cursor: "pointer",
+                  transition: "transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease",
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    boxShadow: "0 10px 26px rgba(36, 82, 224, 0.14)",
+                    transform: "translateY(-2px)",
+                  },
+                  "@media (prefers-reduced-motion: reduce)": {
+                    transition: "none",
+                    "&:hover": { transform: "none" },
+                  },
+                }}
+              >
                 <CardContent sx={{ flex: 1, minWidth: 0 }}>
                   <Box sx={{ width: 42, height: 42, display: "grid", placeItems: "center", borderRadius: 1.5, bgcolor: "action.hover", fontSize: "1.35rem" }}>
                     {page.icon || <PublicIcon color="action" />}
                   </Box>
-                  <Typography variant="h6" title={title} sx={{ mt: 2, fontWeight: 650, overflowWrap: "anywhere" }}>
+                  <Typography
+                    component={Link}
+                    to={isOwnPage ? `/pages/${page.id}` : `/p/${page.slug}`}
+                    aria-label={isOwnPage
+                      ? `Open ${title} in your workspace`
+                      : `Open ${title} public collection`}
+                    variant="h6"
+                    title={title}
+                    sx={{
+                      display: "block",
+                      mt: 2,
+                      color: "text.primary",
+                      fontWeight: 650,
+                      overflowWrap: "anywhere",
+                      textDecoration: "none",
+                      "&::after": {
+                        position: "absolute",
+                        zIndex: 1,
+                        inset: 0,
+                        borderRadius: "inherit",
+                        content: '""',
+                      },
+                      "&:focus-visible": { outline: "none" },
+                      "&:focus-visible::after": {
+                        outline: "3px solid",
+                        outlineColor: "primary.main",
+                        outlineOffset: 3,
+                      },
+                    }}
+                  >
                     {title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -149,16 +200,7 @@ export const ExplorePublicLibraryView = ({
                     {page.linkCount} {page.linkCount === 1 ? "link" : "links"}
                   </Typography>
                 </CardContent>
-                <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 0.5, flexWrap: "wrap" }}>
-                  <Button
-                    component="a"
-                    href={isOwnPage ? `/pages/${page.id}` : `/p/${page.slug}`}
-                    aria-label={isOwnPage ? `Open ${title} in workspace` : `Open ${title} collection`}
-                    size="small"
-                    endIcon={<OpenInNewIcon fontSize="small" />}
-                  >
-                    {isOwnPage ? "Open in workspace" : "Open collection"}
-                  </Button>
+                <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 0.5, flexWrap: "wrap", pointerEvents: "none" }}>
                   {!ownershipKnown ? null : isOwnPage ? (
                     <Typography variant="caption" color="text.secondary" sx={{ px: 1, py: 0.75, fontWeight: 600 }}>
                       Own page
@@ -170,6 +212,7 @@ export const ExplorePublicLibraryView = ({
                       startIcon={isBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
                       disabled={bookmarkPending}
                       onClick={() => onToggleBookmark?.(page, isBookmarked)}
+                      sx={{ position: "relative", zIndex: 2, pointerEvents: "auto" }}
                     >
                       {isBookmarked ? "Bookmarked" : "Bookmark"}
                     </Button>

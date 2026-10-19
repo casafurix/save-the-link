@@ -7,21 +7,10 @@ import { useDeleteBlock } from "./blocksQueries";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { normalizeNbsp, sanitizeHtml } from "../../lib/sanitizeHtml";
 import { monoFont } from "../../theme/theme";
+import { getBlockSource } from "./blockView";
 
 const hideOnError = (event: SyntheticEvent<HTMLImageElement>) => {
   event.currentTarget.style.display = "none";
-};
-
-const getDomain = (block: Block) => {
-  if (block.siteName) {
-    return block.siteName;
-  }
-
-  try {
-    return new URL(block.url).hostname.replace(/^www\./, "");
-  } catch {
-    return block.url;
-  }
 };
 
 interface LinkCardProps {
@@ -53,6 +42,7 @@ const LinkCard = ({ block, pageId, onEdit, readOnly = false }: LinkCardProps) =>
         href={block.url}
         target="_blank"
         rel="noopener noreferrer"
+        draggable={false}
       >
         {block.coverImage ? (
           <Box
@@ -132,7 +122,7 @@ const LinkCard = ({ block, pageId, onEdit, readOnly = false }: LinkCardProps) =>
             color="text.secondary"
             sx={{ mt: 1, display: "block", fontFamily: monoFont }}
           >
-            {getDomain(block)}
+            {getBlockSource(block)}
           </Typography>
 
           {block.tags.length > 0 && (

@@ -27,6 +27,14 @@ import { useAuth } from "../../context/useAuth";
 import { dotGridSx } from "../../theme/texture";
 import type { Block } from "../../models/block";
 import { formatCreatorUsername } from "../../models/publicPage";
+import BlockViewControls from "../../features/blocks/BlockViewControls";
+import {
+  canReorderBlockView,
+  defaultBlockView,
+  filterAndSortBlocks,
+  hasBlockFilters,
+  type BlockViewState,
+} from "../../features/blocks/blockView";
 
 // Anonymous visitors land on a shared page with no app chrome at all — this is
 // their only way to discover that "Save The Link" is a real product they can
@@ -158,6 +166,7 @@ const PublicPageScreen = () => {
 
   const [createPending, setCreatePending] = useState(false);
   const [editingBlock, setEditingBlock] = useState<Block | null>(null);
+  const [blockView, setBlockView] = useState<BlockViewState>(defaultBlockView);
 
   // A page you own already lives in your own sidebar — bookmarking is only
   // offered once we're sure this page isn't one of yours, so it never even
@@ -217,7 +226,9 @@ const PublicPageScreen = () => {
     );
   }
 
-  const hasContent = (blocks && blocks.length > 0) || createPending;
+  const visibleBlocks = filterAndSortBlocks(blocks ?? [], blockView);
+  const canReorder = canReorderBlockView(canEdit, blockView);
+  const hasContent = visibleBlocks.length > 0 || createPending;
 
   return (
     <Box sx={(theme) => ({ minHeight: "100dvh", ...dotGridSx(theme) })}>
@@ -250,21 +261,36 @@ const PublicPageScreen = () => {
                 <Skeleton key={key} variant="rounded" height={180} />
               ))}
             </Box>
-          ) : hasContent ? (
-            <>
-              <SortableBlockGrid
-                blocks={blocks ?? []}
-                pageId={page.id}
-                onEdit={setEditingBlock}
-                canReorder={canEdit}
-                readOnly={!canEdit}
-                showPending={createPending}
-              />
-            </>
           ) : (
-            <Stack sx={{ alignItems: "center", mt: 6 }}>
-              <Typography color="text.secondary">No links here yet.</Typography>
-            </Stack>
+            <>
+              {(blocks?.length ?? 0) > 0 && (
+                <BlockViewControls
+                  blocks={blocks ?? []}
+                  value={blockView}
+                  onChange={setBlockView}
+                  resultCount={visibleBlocks.length}
+                  reorderDisabled={canEdit && !canReorder}
+                />
+              )}
+              {hasContent ? (
+                <SortableBlockGrid
+                  blocks={visibleBlocks}
+                  pageId={page.id}
+                  onEdit={setEditingBlock}
+                  canReorder={canReorder}
+                  readOnly={!canEdit}
+                  showPending={createPending}
+                />
+              ) : (
+                <Stack sx={{ alignItems: "center", mt: 6 }}>
+                  <Typography color="text.secondary">
+                    {hasBlockFilters(blockView)
+                      ? "No links match the current filters."
+                      : "No links here yet."}
+                  </Typography>
+                </Stack>
+              )}
+            </>
           )}
         </Box>
 

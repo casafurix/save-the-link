@@ -9,7 +9,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
 import PublicIcon from "@mui/icons-material/Public";
 import { useNavigate, useParams } from "react-router";
 import { usePage, useUpdatePage } from "../../features/pages/pagesQueries";
@@ -21,6 +20,14 @@ import EditBlockDialog from "../../features/blocks/EditBlockDialog";
 import ShareDialog from "../../features/pages/ShareDialog";
 import type { Page } from "../../models/page";
 import type { Block } from "../../models/block";
+import BlockViewControls from "../../features/blocks/BlockViewControls";
+import {
+  canReorderBlockView,
+  defaultBlockView,
+  filterAndSortBlocks,
+  hasBlockFilters,
+  type BlockViewState,
+} from "../../features/blocks/blockView";
 
 const PageEditor = ({ page }: { page: Page }) => {
   const updatePage = useUpdatePage();
@@ -49,27 +56,9 @@ const PageEditor = ({ page }: { page: Page }) => {
   const [createPending, setCreatePending] = useState(false);
   const [editingBlock, setEditingBlock] = useState<Block | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const allTags = Array.from(new Set(blocks?.flatMap((block) => block.tags) ?? [])).sort();
-
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-  const matchesSearch = (block: Block) => {
-    if (!normalizedQuery) {
-      return true;
-    }
-
-    const haystack = [block.title, block.description.replace(/<[^>]*>/g, " "), block.url, ...block.tags]
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(normalizedQuery);
-  };
-
-  const visibleBlocks = blocks
-    ?.filter((block) => !activeTag || block.tags.includes(activeTag))
-    .filter(matchesSearch);
+  const [blockView, setBlockView] = useState<BlockViewState>(defaultBlockView);
+  const visibleBlocks = filterAndSortBlocks(blocks ?? [], blockView);
+  const canReorder = canReorderBlockView(true, blockView);
 
   const hasContent = (visibleBlocks && visibleBlocks.length > 0) || createPending;
 
@@ -146,36 +135,13 @@ const PageEditor = ({ page }: { page: Page }) => {
       <AddLinkForm pageId={page.id} onPendingChange={setCreatePending} />
 
       {(blocks && blocks.length > 0) && (
-        <TextField
-          placeholder="Search links on this page…"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          size="small"
-          fullWidth
-          slotProps={{
-            input: {
-              startAdornment: (
-                <SearchIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-              ),
-            },
-          }}
-          sx={{ mb: 3 }}
+        <BlockViewControls
+          blocks={blocks}
+          value={blockView}
+          onChange={setBlockView}
+          resultCount={visibleBlocks.length}
+          reorderDisabled={!canReorder}
         />
-      )}
-
-      {allTags.length > 0 && (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 3 }}>
-          {allTags.map((tag) => (
-            <Chip
-              key={tag}
-              label={tag}
-              size="small"
-              color={activeTag === tag ? "primary" : undefined}
-              variant={activeTag === tag ? "filled" : "outlined"}
-              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-            />
-          ))}
-        </Box>
       )}
 
       {blocksLoading ? (
@@ -190,18 +156,16 @@ const PageEditor = ({ page }: { page: Page }) => {
             blocks={visibleBlocks ?? []}
             pageId={page.id}
             onEdit={setEditingBlock}
-            canReorder={!normalizedQuery && !activeTag}
+            canReorder={canReorder}
             showPending={createPending}
           />
         </>
       ) : (
         <Box sx={{ mt: 6, textAlign: "center" }}>
           <Typography color="text.secondary">
-            {normalizedQuery
-              ? `No links match "${searchQuery.trim()}".`
-              : activeTag
-                ? `No links tagged "${activeTag}".`
-                : "No links here yet — paste one above to get started."}
+            {hasBlockFilters(blockView)
+              ? "No links match the current filters."
+              : "No links here yet — paste one above to get started."}
           </Typography>
         </Box>
       )}
