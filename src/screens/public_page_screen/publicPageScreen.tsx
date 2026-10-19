@@ -26,6 +26,7 @@ import EditBlockDialog from "../../features/blocks/EditBlockDialog";
 import { useAuth } from "../../context/useAuth";
 import { dotGridSx } from "../../theme/texture";
 import type { Block } from "../../models/block";
+import { formatCreatorUsername } from "../../models/publicPage";
 
 // Anonymous visitors land on a shared page with no app chrome at all — this is
 // their only way to discover that "Save The Link" is a real product they can
@@ -48,9 +49,15 @@ const GuestBanner = () => (
       borderColor: "divider",
     }}
   >
-    <Typography variant="body2" color="text.secondary">
-      Save The Link — create a free account to organize and save your own links.
-    </Typography>
+    <Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+      <Box component="img" src="/favicon.svg" alt="" sx={{ width: 24, height: 24 }} />
+      <Typography variant="body2" color="text.secondary">
+        <Box component="span" sx={{ color: "text.primary", fontWeight: 700 }}>
+          Save The Link
+        </Box>{" "}
+        — create a free account to organize and save your own links.
+      </Typography>
+    </Stack>
     <Stack direction="row" sx={{ gap: 1 }}>
       <Button component={Link} to="/login" size="small">
         Sign in
@@ -227,6 +234,9 @@ const PublicPageScreen = () => {
       <Box sx={{ maxWidth: 960, mx: "auto", px: 4, py: 6 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           {page.title || "Untitled"}
+        </Typography>
+        <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+          Curated by {formatCreatorUsername(page.creatorUsername)}
         </Typography>
 
         {canEdit && (
