@@ -71,6 +71,7 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
 
   const hasChildren = node.children.length > 0;
   const isActive = pageId === node.id;
+  const verticalTransform = transform ? { ...transform, x: 0 } : null;
 
   const commitRename = () => {
     const title = draftTitle.trim();
@@ -106,7 +107,7 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
     <>
       <ListItemButton
         ref={setNodeRef}
-        style={{ transform: CSS.Transform.toString(transform), transition }}
+        style={{ transform: CSS.Transform.toString(verticalTransform), transition }}
         data-page-id={node.id}
         selected={isActive}
         onClick={() => navigate(`/pages/${node.id}`)}

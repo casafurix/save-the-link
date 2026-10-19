@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
@@ -27,6 +28,8 @@ import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import BookmarkRemoveIcon from "@mui/icons-material/BookmarkRemove";
 import PublicIcon from "@mui/icons-material/Public";
+import CloseIcon from "@mui/icons-material/Close";
+import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
 import { useNavigate } from "react-router";
 import { useAuth } from "../context/useAuth";
 import { useThemeMode } from "../context/useThemeMode";
@@ -69,6 +72,55 @@ interface SidebarProps {
   mobileOpen: boolean;
   onCloseMobile: () => void;
 }
+
+interface LogoMorphButtonProps {
+  label: string;
+  onClick: () => void;
+  placement?: "bottom" | "right";
+  action: ReactNode;
+}
+
+const LogoMorphButton = ({ label, onClick, placement = "bottom", action }: LogoMorphButtonProps) => (
+  <Tooltip title={label} placement={placement}>
+    <IconButton
+      size="small"
+      onClick={onClick}
+      aria-label={label}
+      sx={{
+        position: "relative",
+        width: 36,
+        height: 36,
+        flexShrink: 0,
+        "& .logo-morph-layer": {
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+          transition: "opacity 160ms ease, transform 160ms ease",
+        },
+        "& .logo-morph-action": { opacity: 0, transform: "scale(0.82)" },
+        "&:hover .logo-morph-mark, &:focus .logo-morph-mark": {
+          opacity: 0,
+          transform: "scale(0.82)",
+        },
+        "&:hover .logo-morph-action, &:focus .logo-morph-action": {
+          opacity: 1,
+          transform: "scale(1)",
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          "& .logo-morph-layer": { transition: "none" },
+        },
+      }}
+    >
+      <Box className="logo-morph-layer logo-morph-mark" aria-hidden="true">
+        <Box component="img" src="/favicon.svg" alt="" sx={{ width: 25, height: 25 }} />
+      </Box>
+      <Box className="logo-morph-layer logo-morph-action" aria-hidden="true">
+        {action}
+      </Box>
+    </IconButton>
+  </Tooltip>
+);
 
 const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
   const navigate = useNavigate();
@@ -190,15 +242,17 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         direction="row"
         sx={{ alignItems: "center", justifyContent: "space-between", px: 1.25, py: 1.25 }}
       >
-        <Tooltip title={isMobile ? "Close menu" : "Collapse sidebar"}>
-          <IconButton
-            size="small"
-            onClick={isMobile ? onCloseMobile : () => setCollapsed(true)}
-            aria-label={isMobile ? "Close menu" : "Collapse sidebar"}
-          >
-            <Box component="img" src="/favicon.svg" alt="" sx={{ width: 25, height: 25 }} />
-          </IconButton>
-        </Tooltip>
+        <LogoMorphButton
+          label={isMobile ? "Close menu" : "Collapse sidebar"}
+          onClick={isMobile ? onCloseMobile : () => setCollapsed(true)}
+          action={
+            isMobile ? (
+              <CloseIcon fontSize="small" />
+            ) : (
+              <ViewSidebarOutlinedIcon fontSize="small" />
+            )
+          }
+        />
         <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600, flex: 1, ml: 0.5 }}>
           Save The Link
         </Typography>
@@ -347,11 +401,12 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
           gap: 0.5,
         }}
       >
-        <Tooltip title="Expand sidebar" placement="right">
-          <IconButton size="small" onClick={() => setCollapsed(false)} aria-label="Expand sidebar">
-            <Box component="img" src="/favicon.svg" alt="" sx={{ width: 27, height: 27 }} />
-          </IconButton>
-        </Tooltip>
+        <LogoMorphButton
+          label="Expand sidebar"
+          placement="right"
+          onClick={() => setCollapsed(false)}
+          action={<ViewSidebarOutlinedIcon fontSize="small" sx={{ transform: "scaleX(-1)" }} />}
+        />
         <Tooltip title="Search" placement="right">
           <IconButton size="small" onClick={() => setSearchOpen(true)} aria-label="Search">
             <SearchIcon fontSize="small" />
