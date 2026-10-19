@@ -187,6 +187,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
   const handleNewPage = async () => {
     const created = await createPage.mutateAsync({ title: "Untitled" });
     navigate(`/pages/${created.id}`);
+    if (isMobile) onCloseMobile();
   };
 
   const handleResizeStart = (event: ReactMouseEvent) => {
@@ -266,27 +267,52 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         <IconButton size="small" onClick={() => setSearchOpen(true)} aria-label="Search">
           <SearchIcon fontSize="small" />
         </IconButton>
-        <IconButton size="small" onClick={handleNewPage} aria-label="New page">
-          <AddIcon fontSize="small" />
-        </IconButton>
       </Stack>
 
       <Divider />
 
-      <List disablePadding sx={{ px: 1, pt: 1 }}>
-        <ListItemButton
-          selected={exploreActive}
-          onClick={handleExplore}
-          sx={{ borderRadius: 1.5, px: 1.25, py: 1 }}
+      <Box sx={{ px: 1, pt: 1 }}>
+        <Typography
+          component="h2"
+          variant="caption"
+          color="text.secondary"
+          sx={{ px: 1, py: 0.5, display: "block", fontWeight: 700, letterSpacing: "0.08em" }}
         >
-          <PublicIcon fontSize="small" sx={{ mr: 1.25 }} />
-          <Typography variant="body2" sx={{ fontWeight: exploreActive ? 700 : 600 }}>
-            Explore
-          </Typography>
-        </ListItemButton>
-      </List>
+          DISCOVER
+        </Typography>
+        <List disablePadding>
+          <ListItemButton
+            selected={exploreActive}
+            onClick={handleExplore}
+            sx={{ borderRadius: 1.5, px: 1.25, py: 1 }}
+          >
+            <PublicIcon fontSize="small" sx={{ mr: 1.25 }} />
+            <Typography variant="body2" sx={{ fontWeight: exploreActive ? 700 : 600 }}>
+              Explore
+            </Typography>
+          </ListItemButton>
+        </List>
+      </Box>
 
-      <Box sx={{ flex: 1, overflowY: "auto", py: 1 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", py: 1 }}>
+        <Stack
+          direction="row"
+          sx={{ alignItems: "center", justifyContent: "space-between", px: 2, pb: 0.5 }}
+        >
+          <Typography
+            component="h2"
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontWeight: 700, letterSpacing: "0.08em" }}
+          >
+            YOUR PAGES
+          </Typography>
+          <Tooltip title="New page">
+            <IconButton size="small" onClick={handleNewPage} aria-label="New page" sx={{ p: 0.375 }}>
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
         {isLoading ? (
           <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1 }}>
             Loading…
@@ -307,11 +333,12 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
           <Divider />
           <Box sx={{ maxHeight: 200, overflowY: "auto", py: 1 }}>
             <Typography
+              component="h2"
               variant="caption"
               color="text.secondary"
-              sx={{ px: 2, py: 0.5, display: "block", fontWeight: 600, letterSpacing: "0.04em" }}
+              sx={{ px: 2, py: 0.5, display: "block", fontWeight: 700, letterSpacing: "0.08em" }}
             >
-              Bookmarked
+              BOOKMARKED
             </Typography>
             <List disablePadding sx={{ px: 1 }}>
               {bookmarks.map((bookmark) => (
@@ -347,35 +374,63 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
 
       <Divider />
 
-      <Stack direction="row" sx={{ alignItems: "center", px: 2, py: 1.5, gap: 1 }}>
-        <Typography variant="body2" noWrap sx={{ flex: 1 }}>
-          {user?.username}
-        </Typography>
-        <IconButton
-          size="small"
-          onClick={toggleMode}
-          aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {mode === "dark" ? (
-            <LightModeOutlinedIcon fontSize="small" />
-          ) : (
-            <DarkModeOutlinedIcon fontSize="small" />
-          )}
-        </IconButton>
-        <IconButton size="small" onClick={() => setTrashOpen(true)} aria-label="Trash">
-          <DeleteOutlineIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={() => navigate("/settings")}
-          aria-label="Settings"
-        >
-          <SettingsOutlinedIcon fontSize="small" />
-        </IconButton>
-        <IconButton size="small" onClick={logout} aria-label="Log out">
-          <LogoutIcon fontSize="small" />
-        </IconButton>
-      </Stack>
+      <Box sx={{ px: 1.5, py: 1 }}>
+        <Tooltip title={user?.username ?? ""} placement="top-start">
+          <Stack
+            direction="row"
+            tabIndex={0}
+            aria-label={`Signed in as ${user?.username ?? "user"}`}
+            sx={{ minWidth: 0, alignItems: "center", gap: 1, px: 0.5, py: 0.5 }}
+          >
+            <Box
+              aria-hidden="true"
+              sx={{
+                display: "grid",
+                width: 26,
+                height: 26,
+                flexShrink: 0,
+                placeItems: "center",
+                borderRadius: "50%",
+                bgcolor: "action.selected",
+                color: "text.secondary",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+              }}
+            >
+              {user?.username?.charAt(0).toUpperCase()}
+            </Box>
+            <Typography variant="body2" noWrap sx={{ minWidth: 0, fontWeight: 600 }}>
+              {user?.username}
+            </Typography>
+          </Stack>
+        </Tooltip>
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-around", mt: 0.5 }}>
+          <IconButton
+            size="small"
+            onClick={toggleMode}
+            aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {mode === "dark" ? (
+              <LightModeOutlinedIcon fontSize="small" />
+            ) : (
+              <DarkModeOutlinedIcon fontSize="small" />
+            )}
+          </IconButton>
+          <IconButton size="small" onClick={() => setTrashOpen(true)} aria-label="Trash">
+            <DeleteOutlineIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={() => navigate("/settings")}
+            aria-label="Settings"
+          >
+            <SettingsOutlinedIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" onClick={logout} aria-label="Log out">
+            <LogoutIcon fontSize="small" />
+          </IconButton>
+        </Stack>
+      </Box>
     </>
   );
 

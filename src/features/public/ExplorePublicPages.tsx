@@ -239,7 +239,6 @@ export const ExplorePublicPagesView = ({
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [selectedPageId, setSelectedPageId] = useState<string>();
   const [isRotationPaused, setIsRotationPaused] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [containsFocus, setContainsFocus] = useState(false);
   const [isDocumentVisible, setIsDocumentVisible] = useState(
     () => typeof document === "undefined" || document.visibilityState !== "hidden",
@@ -263,7 +262,6 @@ export const ExplorePublicPagesView = ({
       !isDesktop ||
       prefersReducedMotion ||
       isRotationPaused ||
-      isHovered ||
       containsFocus ||
       !isDocumentVisible ||
       availablePages.length < 2
@@ -282,7 +280,6 @@ export const ExplorePublicPagesView = ({
     containsFocus,
     isDesktop,
     isDocumentVisible,
-    isHovered,
     isRotationPaused,
     prefersReducedMotion,
     selectedIndex,
@@ -296,8 +293,6 @@ export const ExplorePublicPagesView = ({
     <Box
       component="section"
       aria-labelledby="explore-public-pages-heading"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onFocus={() => setContainsFocus(true)}
       onBlur={handleBlur}
       sx={{ minWidth: 0 }}
