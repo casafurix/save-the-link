@@ -87,7 +87,9 @@ describe("AddLinkForm", () => {
     const input = screen.getByPlaceholderText("Paste a link to save it…");
     await user.type(input, "https://example.com");
     await user.click(screen.getByRole("button", { name: "Save" }));
-    await user.click(await screen.findByRole("button", { name: "Save anyway" }));
+    const saveAnyway = await screen.findByRole("button", { name: "Save anyway" });
+    expect(saveAnyway).toHaveClass("MuiButton-colorPrimary");
+    await user.click(saveAnyway);
 
     await waitFor(() => {
       expect(createBlock).toHaveBeenNthCalledWith(2, "page-1", {
