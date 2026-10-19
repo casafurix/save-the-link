@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as pagesApi from "../../api/pages";
-import type { UpdatePageInput } from "../../models/page";
-import { useToast } from "../../context/toastContext";
+import type { Page, UpdatePageInput } from "../../models/page";
+import { useToast } from "../../context/useToast";
 import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export const pagesQueryKey = ["pages"] as const;
+export const reorderPagesMutationKey = ["reorder-pages"] as const;
 
 export const usePages = (enabled = true) =>
   useQuery({
@@ -48,6 +49,30 @@ export const useUpdatePage = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: pagesQueryKey }),
     onError: (error) =>
       showToast(getErrorMessage(error, "Couldn't save that change."), "error"),
+  });
+};
+
+export const useReorderPages = () => {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationKey: reorderPagesMutationKey,
+    mutationFn: ({ id, order }: { id: string; order: number }) =>
+      pagesApi.updatePage(id, { order }),
+    onMutate: async ({ id, order }) => {
+      await queryClient.cancelQueries({ queryKey: pagesQueryKey });
+      const previous = queryClient.getQueryData<Page[]>(pagesQueryKey);
+      queryClient.setQueryData<Page[]>(pagesQueryKey, (current) =>
+        current?.map((page) => page.id === id ? { ...page, order } : page),
+      );
+      return { previous };
+    },
+    onError: (error, _update, context) => {
+      queryClient.setQueryData(pagesQueryKey, context?.previous);
+      showToast(getErrorMessage(error, "Couldn't reorder those pages."), "error");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: pagesQueryKey }),
   });
 };
 

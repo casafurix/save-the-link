@@ -24,8 +24,8 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import BookmarkRemoveIcon from "@mui/icons-material/BookmarkRemove";
 import PublicIcon from "@mui/icons-material/Public";
 import { useNavigate } from "react-router";
-import { useAuth } from "../context/authContext";
-import { useThemeMode } from "../context/themeModeContext";
+import { useAuth } from "../context/useAuth";
+import { useThemeMode } from "../context/useThemeMode";
 import {
   usePages,
   useCreatePage,
@@ -33,7 +33,7 @@ import {
   useUnbookmarkPage,
 } from "../features/pages/pagesQueries";
 import { buildPageTree } from "../features/pages/buildPageTree";
-import PageTreeItem from "../features/pages/PageTreeItem";
+import { PageTreeList } from "../features/pages/PageTreeItem";
 import TrashDialog from "../features/pages/TrashDialog";
 import GlobalSearchDialog from "../features/search/GlobalSearchDialog";
 
@@ -141,11 +141,9 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
             No pages yet — create one to get started.
           </Typography>
         ) : (
-          <List disablePadding sx={{ px: 1 }}>
-            {tree.map((node) => (
-              <PageTreeItem key={node.id} node={node} depth={0} />
-            ))}
-          </List>
+          <Box sx={{ px: 1 }}>
+            <PageTreeList nodes={tree} depth={0} />
+          </Box>
         )}
       </Box>
 

@@ -1,4 +1,5 @@
 import type { Page } from "../../models/page";
+import { sortByOrder } from "../../lib/reorder";
 
 export interface PageTreeNode extends Page {
   children: PageTreeNode[];
@@ -21,5 +22,6 @@ export const buildPageTree = (pages: Page[]): PageTreeNode[] => {
     }
   });
 
-  return roots;
+  nodeById.forEach((node) => node.children = sortByOrder(node.children));
+  return sortByOrder(roots);
 };

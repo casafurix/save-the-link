@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -9,23 +9,18 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import AddLinkIcon from "@mui/icons-material/AddLink";
 import SearchIcon from "@mui/icons-material/Search";
 import PublicIcon from "@mui/icons-material/Public";
 import { useNavigate, useParams } from "react-router";
 import { usePage, useUpdatePage } from "../../features/pages/pagesQueries";
-import { useBlocks, useCreateBlock } from "../../features/blocks/blocksQueries";
-import LinkCard from "../../features/blocks/LinkCard";
+import { useBlocks } from "../../features/blocks/blocksQueries";
+import AddLinkForm from "../../features/blocks/AddLinkForm";
+import SortableBlockGrid from "../../features/blocks/SortableBlockGrid";
+import { blockGridSx } from "../../features/blocks/blockGridStyles";
 import EditBlockDialog from "../../features/blocks/EditBlockDialog";
 import ShareDialog from "../../features/pages/ShareDialog";
 import type { Page } from "../../models/page";
 import type { Block } from "../../models/block";
-
-const gridSx = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-  gap: 2,
-};
 
 const PageEditor = ({ page }: { page: Page }) => {
   const updatePage = useUpdatePage();
@@ -51,8 +46,7 @@ const PageEditor = ({ page }: { page: Page }) => {
   };
 
   const { data: blocks, isLoading: blocksLoading } = useBlocks(page.id);
-  const createBlock = useCreateBlock(page.id);
-  const [url, setUrl] = useState("");
+  const [createPending, setCreatePending] = useState(false);
   const [editingBlock, setEditingBlock] = useState<Block | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -77,18 +71,7 @@ const PageEditor = ({ page }: { page: Page }) => {
     ?.filter((block) => !activeTag || block.tags.includes(activeTag))
     .filter(matchesSearch);
 
-  const handleAddLink = (event: FormEvent) => {
-    event.preventDefault();
-    const trimmed = url.trim();
-
-    if (!trimmed) {
-      return;
-    }
-
-    createBlock.mutate(trimmed, { onSuccess: () => setUrl("") });
-  };
-
-  const hasContent = (visibleBlocks && visibleBlocks.length > 0) || createBlock.isPending;
+  const hasContent = (visibleBlocks && visibleBlocks.length > 0) || createPending;
 
   return (
     <Box sx={{ maxWidth: 960, mx: "auto", px: 4, py: 6 }}>
@@ -160,34 +143,7 @@ const PageEditor = ({ page }: { page: Page }) => {
         </Stack>
       </Stack>
 
-      <Box
-        component="form"
-        onSubmit={handleAddLink}
-        sx={{ display: "flex", gap: 1, mt: 4, mb: 4 }}
-      >
-        <TextField
-          placeholder="Paste a link to save it…"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          fullWidth
-          size="small"
-        />
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={!url.trim() || createBlock.isPending}
-          startIcon={
-            createBlock.isPending ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              <AddLinkIcon />
-            )
-          }
-          sx={{ flexShrink: 0 }}
-        >
-          Save
-        </Button>
-      </Box>
+      <AddLinkForm pageId={page.id} onPendingChange={setCreatePending} />
 
       {(blocks && blocks.length > 0) && (
         <TextField
@@ -223,23 +179,21 @@ const PageEditor = ({ page }: { page: Page }) => {
       )}
 
       {blocksLoading ? (
-        <Box sx={gridSx}>
+        <Box sx={blockGridSx}>
           {[1, 2, 3].map((key) => (
             <Skeleton key={key} variant="rounded" height={180} />
           ))}
         </Box>
       ) : hasContent ? (
-        <Box sx={gridSx}>
-          {createBlock.isPending && <Skeleton variant="rounded" height={180} />}
-          {visibleBlocks?.map((block) => (
-            <LinkCard
-              key={block.id}
-              block={block}
-              pageId={page.id}
-              onEdit={setEditingBlock}
-            />
-          ))}
-        </Box>
+        <>
+          <SortableBlockGrid
+            blocks={visibleBlocks ?? []}
+            pageId={page.id}
+            onEdit={setEditingBlock}
+            canReorder={!normalizedQuery && !activeTag}
+            showPending={createPending}
+          />
+        </>
       ) : (
         <Box sx={{ mt: 6, textAlign: "center" }}>
           <Typography color="text.secondary">

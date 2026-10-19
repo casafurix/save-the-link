@@ -33,7 +33,11 @@ const EditBlockForm = ({ block, pageId, onClose }: EditBlockFormProps) => {
     updateBlock.mutate(
       {
         id: block.id,
-        updates: { title: title.trim() || block.title, description, tags },
+        updates: {
+          title: title.trim() || block.title,
+          description: sanitizeHtml(normalizeNbsp(description)),
+          tags,
+        },
       },
       { onSuccess: onClose },
     );

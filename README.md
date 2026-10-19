@@ -129,16 +129,16 @@ later, with no need to re-find the original share link:
 
 ### Prerequisites
 
-- Node.js (v20+)
-- Go (1.20+)
-- A MongoDB connection string (local or Atlas)
+- Node.js (v22.22+)
+- Docker Desktop
 
 ### Backend
 
 ```bash
 cd ../save-the-link.backend
-# copy .env.sample to .env and fill in your MongoDB credentials
-go run ./cmd/api/main.go
+cp .env.sample .env
+# Set mongo_connection_string=mongodb://mongo:27017 and choose a local jwt_secret.
+docker compose up --build
 ```
 
 ### Frontend
@@ -149,3 +149,15 @@ npm run dev
 ```
 
 Then open `http://localhost:5173`.
+
+For local development, create `.env.local` in the frontend with:
+
+```bash
+VITE_SERVER_HOST=http://localhost:8080
+```
+
+## Security notes
+
+Quill 2.0.3 retains a low-severity HTML-export advisory with no non-downgrade fix.
+The editor limits formats to its toolbar allowlist and descriptions are sanitized both
+before persistence and again before rendering.

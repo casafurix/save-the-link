@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { CssBaseline, ThemeProvider } from "@mui/material";
-import { useThemeMode } from "../context/themeModeContext";
+import { useThemeMode } from "../context/useThemeMode";
 import { darkTheme, lightTheme } from "./theme";
 
 const AppThemeProvider = ({ children }: { children: ReactNode }) => {

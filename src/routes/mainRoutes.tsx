@@ -1,13 +1,22 @@
+import { lazy, Suspense } from "react";
+import { Box, CircularProgress } from "@mui/material";
 import { Navigate, Route, Routes } from "react-router";
 import PublicRoutes from "./publicRoutes";
-import RegisterScreen from "../screens/register_screen/registerScreen";
-import LoginScreen from "../screens/login_screen/loginScreen";
 import ProtectedRoute from "./protectedRoutes";
-import HomeScreen from "../screens/home_screen/home_screen";
-import PageScreen from "../screens/page_screen/pageScreen";
-import PublicPageScreen from "../screens/public_page_screen/publicPageScreen";
-import SettingsScreen from "../screens/settings_screen/settingsScreen";
 import AppLayout from "../layouts/AppLayout";
+
+const RegisterScreen = lazy(() => import("../screens/register_screen/registerScreen"));
+const LoginScreen = lazy(() => import("../screens/login_screen/loginScreen"));
+const HomeScreen = lazy(() => import("../screens/home_screen/home_screen"));
+const PageScreen = lazy(() => import("../screens/page_screen/pageScreen"));
+const PublicPageScreen = lazy(() => import("../screens/public_page_screen/publicPageScreen"));
+const SettingsScreen = lazy(() => import("../screens/settings_screen/settingsScreen"));
+
+const routeFallback = (
+  <Box sx={{ display: "flex", justifyContent: "center", pt: 8, width: "100%" }}>
+    <CircularProgress size={24} />
+  </Box>
+);
 
 export const MainRoutes = () => {
   return (
@@ -16,7 +25,7 @@ export const MainRoutes = () => {
         path="/register"
         element={
           <PublicRoutes>
-            <RegisterScreen />
+            <Suspense fallback={routeFallback}><RegisterScreen /></Suspense>
           </PublicRoutes>
         }
       />
@@ -24,7 +33,7 @@ export const MainRoutes = () => {
         path="/login"
         element={
           <PublicRoutes>
-            <LoginScreen />
+            <Suspense fallback={routeFallback}><LoginScreen /></Suspense>
           </PublicRoutes>
         }
       />
@@ -35,11 +44,11 @@ export const MainRoutes = () => {
           </ProtectedRoute>
         }
       >
-        <Route path="/home" element={<HomeScreen />} />
-        <Route path="/pages/:pageId" element={<PageScreen />} />
-        <Route path="/settings" element={<SettingsScreen />} />
+        <Route path="/home" element={<Suspense fallback={routeFallback}><HomeScreen /></Suspense>} />
+        <Route path="/pages/:pageId" element={<Suspense fallback={routeFallback}><PageScreen /></Suspense>} />
+        <Route path="/settings" element={<Suspense fallback={routeFallback}><SettingsScreen /></Suspense>} />
       </Route>
-      <Route path="/p/:slug" element={<PublicPageScreen />} />
+      <Route path="/p/:slug" element={<Suspense fallback={routeFallback}><PublicPageScreen /></Suspense>} />
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

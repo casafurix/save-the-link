@@ -1,21 +1,10 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
-
-export type ThemeMode = "light" | "dark";
-
-interface ThemeModeContextType {
-  mode: ThemeMode;
-  setMode: (mode: ThemeMode) => void;
-  toggleMode: () => void;
-}
-
-const ThemeModeContext = createContext<ThemeModeContextType | null>(null);
+import { ThemeModeContext, type ThemeMode } from "./useThemeMode";
 
 const STORAGE_KEY = "theme-mode";
 
@@ -52,14 +41,4 @@ export const ThemeModeProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ThemeModeContext.Provider value={value}>{children}</ThemeModeContext.Provider>
   );
-};
-
-export const useThemeMode = () => {
-  const context = useContext(ThemeModeContext);
-
-  if (context === null) {
-    throw new Error("useThemeMode must be used inside ThemeModeProvider");
-  }
-
-  return context;
 };

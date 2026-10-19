@@ -23,7 +23,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import type { Page, PageCollaboration } from "../../models/page";
 import { usePublishPage, useSetCollaborators, useUnpublishPage } from "./pagesQueries";
 import { useSearchUsers } from "../users/userQueries";
-import { useToast } from "../../context/toastContext";
+import { useToast } from "../../context/useToast";
 
 type Collaboration = Exclude<PageCollaboration, "none">;
 
