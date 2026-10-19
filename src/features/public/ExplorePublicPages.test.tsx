@@ -95,16 +95,20 @@ describe("public discovery", () => {
     );
   });
 
-  it("pauses while hovered or focused and resets when interaction ends", () => {
+  it("continues rotating while hovered", () => {
     vi.useFakeTimers();
     renderDiscovery();
     const section = screen.getByRole("region", { name: /useful corners of the internet/i });
 
     fireEvent.mouseEnter(section);
-    act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS * 2));
-    expect(screen.getByRole("link", { name: /open design systems collection/i })).toBeVisible();
+    act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS));
+    expect(screen.getByRole("link", { name: /open the quiet web collection/i })).toBeVisible();
+  });
 
-    fireEvent.mouseLeave(section);
+  it("pauses while focused and resets when focus leaves", () => {
+    vi.useFakeTimers();
+    renderDiscovery();
+
     const quietWebChoice = screen.getByRole("button", { name: /feature the quiet web by lin/i });
     fireEvent.focus(quietWebChoice);
     act(() => vi.advanceTimersByTime(SPOTLIGHT_INTERVAL_MS * 2));

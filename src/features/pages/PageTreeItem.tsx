@@ -17,6 +17,8 @@ import AddIcon from "@mui/icons-material/Add";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import PublicIcon from "@mui/icons-material/Public";
 import { useNavigate, useParams } from "react-router";
 import { useIsMutating } from "@tanstack/react-query";
 import type { PageTreeNode } from "./buildPageTree";
@@ -71,6 +73,7 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
 
   const hasChildren = node.children.length > 0;
   const isActive = pageId === node.id;
+  const visibilityLabel = node.visibility === "public" ? "Public page" : "Private page";
   const verticalTransform = transform ? { ...transform, x: 0 } : null;
 
   const commitRename = () => {
@@ -171,6 +174,27 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
             </Typography>
           </Tooltip>
         )}
+
+        <Tooltip title={visibilityLabel} placement="top">
+          <Box
+            component="span"
+            role="img"
+            aria-label={visibilityLabel}
+            sx={{
+              display: "grid",
+              width: 22,
+              flexShrink: 0,
+              placeItems: "center",
+              color: node.visibility === "public" ? "primary.main" : "text.secondary",
+            }}
+          >
+            {node.visibility === "public" ? (
+              <PublicIcon sx={{ fontSize: 15 }} />
+            ) : (
+              <LockOutlinedIcon sx={{ fontSize: 14 }} />
+            )}
+          </Box>
+        </Tooltip>
 
         <Box
           sx={{
