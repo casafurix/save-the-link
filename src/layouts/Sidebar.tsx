@@ -250,16 +250,11 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         direction="row"
         sx={{ alignItems: "center", justifyContent: "space-between", px: 1.25, py: 1.25 }}
       >
-        <LogoMorphButton
-          label={isMobile ? "Close menu" : "Collapse sidebar"}
-          onClick={isMobile ? onCloseMobile : () => setCollapsed(true)}
-          action={
-            isMobile ? (
-              <CloseIcon fontSize="small" />
-            ) : (
-              <ViewSidebarOutlinedIcon fontSize="small" />
-            )
-          }
+        <Box
+          component="img"
+          src="/favicon.svg"
+          alt=""
+          sx={{ width: 28, height: 28, flexShrink: 0, mx: 0.5 }}
         />
         <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600, flex: 1, ml: 0.5 }}>
           Save The Link
@@ -267,6 +262,19 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         <IconButton size="small" onClick={() => setSearchOpen(true)} aria-label="Search">
           <SearchIcon fontSize="small" />
         </IconButton>
+        <Tooltip title={isMobile ? "Close menu" : "Collapse sidebar"}>
+          <IconButton
+            size="small"
+            onClick={isMobile ? onCloseMobile : () => setCollapsed(true)}
+            aria-label={isMobile ? "Close menu" : "Collapse sidebar"}
+          >
+            {isMobile ? (
+              <CloseIcon fontSize="small" />
+            ) : (
+              <ViewSidebarOutlinedIcon fontSize="small" />
+            )}
+          </IconButton>
+        </Tooltip>
       </Stack>
 
       <Divider />

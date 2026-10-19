@@ -155,7 +155,7 @@ const AddLinkForm = ({ pageId, onPendingChange }: AddLinkFormProps) => {
         title="Save duplicate link?"
         description="This link is already saved on this page. Do you want to save it again?"
         confirmLabel="Save anyway"
-        confirmColor="warning"
+        confirmColor="primary"
         confirmDisabled={createBlock.isPending}
         onCancel={() => setDuplicateUrl(null)}
         onConfirm={() => {

@@ -33,6 +33,17 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Sidebar explore navigation", () => {
+  it("keeps the expanded brand separate from the collapse control", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Sidebar mobileOpen={false} onCloseMobile={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(container.querySelector('img[src="/favicon.svg"]')).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collapse sidebar" }).querySelector("img")).toBeNull();
+  });
+
   it("marks Explore active and navigates to the public library", () => {
     const { rerender } = render(
       <MemoryRouter initialEntries={["/home"]}>
