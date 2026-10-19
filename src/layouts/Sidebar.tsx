@@ -1,4 +1,10 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   Box,
   Divider,
@@ -19,8 +25,6 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import BookmarkRemoveIcon from "@mui/icons-material/BookmarkRemove";
 import PublicIcon from "@mui/icons-material/Public";
 import { useNavigate } from "react-router";
@@ -36,9 +40,18 @@ import { buildPageTree } from "../features/pages/buildPageTree";
 import { PageTreeList } from "../features/pages/PageTreeItem";
 import TrashDialog from "../features/pages/TrashDialog";
 import GlobalSearchDialog from "../features/search/GlobalSearchDialog";
+import {
+  SIDEBAR_DEFAULT_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_WIDTH_STORAGE_KEY,
+  clampSidebarWidth,
+  readSidebarWidth,
+} from "./sidebarWidth";
 
-export const SIDEBAR_WIDTH = 260;
+export const SIDEBAR_WIDTH = SIDEBAR_DEFAULT_WIDTH;
 const SIDEBAR_COLLAPSED_WIDTH = 56;
+const MOBILE_SIDEBAR_WIDTH = 288;
 const COLLAPSE_STORAGE_KEY = "sidebar-collapsed";
 
 const getInitialCollapsed = () => {
@@ -48,6 +61,9 @@ const getInitialCollapsed = () => {
     return false;
   }
 };
+
+const getInitialWidth = () =>
+  readSidebarWidth(typeof localStorage === "undefined" ? undefined : localStorage);
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -67,6 +83,9 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
   const [trashOpen, setTrashOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+  const [sidebarWidth, setSidebarWidth] = useState(getInitialWidth);
+  const resizeStart = useRef({ x: 0, width: SIDEBAR_DEFAULT_WIDTH });
+  const resizeCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     try {
@@ -75,6 +94,21 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
       // ignore
     }
   }, [collapsed]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(sidebarWidth));
+    } catch {
+      // Storage may be unavailable in privacy-restricted contexts.
+    }
+  }, [sidebarWidth]);
+
+  useEffect(
+    () => () => {
+      resizeCleanup.current?.();
+    },
+    [],
+  );
 
   // Cmd/Ctrl+K opens global search from anywhere in the app.
   useEffect(() => {
@@ -96,6 +130,53 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
     navigate(`/pages/${created.id}`);
   };
 
+  const handleResizeStart = (event: ReactMouseEvent) => {
+    event.preventDefault();
+    resizeCleanup.current?.();
+    resizeStart.current = { x: event.clientX, width: sidebarWidth };
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    let active = true;
+
+    const handleMove = (moveEvent: MouseEvent) => {
+      setSidebarWidth(
+        clampSidebarWidth(resizeStart.current.width + moveEvent.clientX - resizeStart.current.x),
+      );
+    };
+    const cleanupResize = () => {
+      if (!active) return;
+      active = false;
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", cleanupResize);
+      window.removeEventListener("blur", cleanupResize);
+      if (resizeCleanup.current === cleanupResize) resizeCleanup.current = null;
+    };
+
+    resizeCleanup.current = cleanupResize;
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", cleanupResize);
+    window.addEventListener("blur", cleanupResize);
+  };
+
+  const handleResizeKeyDown = (event: ReactKeyboardEvent) => {
+    const step = event.shiftKey ? 24 : 8;
+    let nextWidth: number | undefined;
+
+    if (event.key === "ArrowLeft") nextWidth = sidebarWidth - step;
+    if (event.key === "ArrowRight") nextWidth = sidebarWidth + step;
+    if (event.key === "Home") nextWidth = SIDEBAR_MIN_WIDTH;
+    if (event.key === "End") nextWidth = SIDEBAR_MAX_WIDTH;
+
+    if (nextWidth !== undefined) {
+      event.preventDefault();
+      setSidebarWidth(clampSidebarWidth(nextWidth));
+    }
+  };
+
   const dialogs = (
     <>
       <TrashDialog open={trashOpen} onClose={() => setTrashOpen(false)} />
@@ -107,9 +188,18 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
     <>
       <Stack
         direction="row"
-        sx={{ alignItems: "center", justifyContent: "space-between", px: 2, py: 1.5 }}
+        sx={{ alignItems: "center", justifyContent: "space-between", px: 1.25, py: 1.25 }}
       >
-        <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600, flex: 1 }}>
+        <Tooltip title={isMobile ? "Close menu" : "Collapse sidebar"}>
+          <IconButton
+            size="small"
+            onClick={isMobile ? onCloseMobile : () => setCollapsed(true)}
+            aria-label={isMobile ? "Close menu" : "Collapse sidebar"}
+          >
+            <Box component="img" src="/favicon.svg" alt="" sx={{ width: 25, height: 25 }} />
+          </IconButton>
+        </Tooltip>
+        <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600, flex: 1, ml: 0.5 }}>
           Save The Link
         </Typography>
         <IconButton size="small" onClick={() => setSearchOpen(true)} aria-label="Search">
@@ -118,15 +208,6 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         <IconButton size="small" onClick={handleNewPage} aria-label="New page">
           <AddIcon fontSize="small" />
         </IconButton>
-        {!isMobile && (
-          <IconButton
-            size="small"
-            onClick={() => setCollapsed(true)}
-            aria-label="Collapse sidebar"
-          >
-            <ChevronLeftIcon fontSize="small" />
-          </IconButton>
-        )}
       </Stack>
 
       <Divider />
@@ -141,7 +222,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
             No pages yet — create one to get started.
           </Typography>
         ) : (
-          <Box sx={{ px: 1 }}>
+          <Box sx={{ px: 0.5 }}>
             <PageTreeList nodes={tree} depth={0} />
           </Box>
         )}
@@ -163,14 +244,16 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
                 <ListItemButton
                   key={bookmark.id}
                   onClick={() => navigate(`/p/${bookmark.slug}`)}
-                  sx={{ borderRadius: 1, py: 0.5 }}
+                  sx={{ borderRadius: 1, py: 0.5, px: 1 }}
                 >
                   <Box sx={{ width: 20, textAlign: "center", mr: 0.75, flexShrink: 0 }}>
                     {bookmark.icon ?? <PublicIcon fontSize="small" />}
                   </Box>
-                  <Typography variant="body2" noWrap sx={{ flex: 1 }}>
-                    {bookmark.title || "Untitled"}
-                  </Typography>
+                  <Tooltip title={bookmark.title || "Untitled"} placement="right" enterDelay={500}>
+                    <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 0 }}>
+                      {bookmark.title || "Untitled"}
+                    </Typography>
+                  </Tooltip>
                   <IconButton
                     size="small"
                     aria-label="Remove bookmark"
@@ -233,7 +316,12 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
           open={mobileOpen}
           onClose={onCloseMobile}
           ModalProps={{ keepMounted: true }}
-          sx={{ "& .MuiDrawer-paper": { width: SIDEBAR_WIDTH, display: "flex" } }}
+          sx={{
+            "& .MuiDrawer-paper": {
+              width: `min(${MOBILE_SIDEBAR_WIDTH}px, calc(100vw - 32px))`,
+              display: "flex",
+            },
+          }}
         >
           {fullContent}
         </Drawer>
@@ -260,30 +348,30 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
         }}
       >
         <Tooltip title="Expand sidebar" placement="right">
-          <IconButton size="small" onClick={() => setCollapsed(false)}>
-            <ChevronRightIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="New page" placement="right">
-          <IconButton size="small" onClick={handleNewPage}>
-            <AddIcon fontSize="small" />
+          <IconButton size="small" onClick={() => setCollapsed(false)} aria-label="Expand sidebar">
+            <Box component="img" src="/favicon.svg" alt="" sx={{ width: 27, height: 27 }} />
           </IconButton>
         </Tooltip>
         <Tooltip title="Search" placement="right">
-          <IconButton size="small" onClick={() => setSearchOpen(true)}>
+          <IconButton size="small" onClick={() => setSearchOpen(true)} aria-label="Search">
             <SearchIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="New page" placement="right">
+          <IconButton size="small" onClick={handleNewPage} aria-label="New page">
+            <AddIcon fontSize="small" />
           </IconButton>
         </Tooltip>
 
         <Box sx={{ flex: 1 }} />
 
         <Tooltip title="Trash" placement="right">
-          <IconButton size="small" onClick={() => setTrashOpen(true)}>
+          <IconButton size="small" onClick={() => setTrashOpen(true)} aria-label="Trash">
             <DeleteOutlineIcon fontSize="small" />
           </IconButton>
         </Tooltip>
         <Tooltip title="Settings" placement="right">
-          <IconButton size="small" onClick={() => navigate("/settings")}>
+          <IconButton size="small" onClick={() => navigate("/settings")} aria-label="Settings">
             <SettingsOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -291,7 +379,11 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
           title={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           placement="right"
         >
-          <IconButton size="small" onClick={toggleMode}>
+          <IconButton
+            size="small"
+            onClick={toggleMode}
+            aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
             {mode === "dark" ? (
               <LightModeOutlinedIcon fontSize="small" />
             ) : (
@@ -300,7 +392,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
           </IconButton>
         </Tooltip>
         <Tooltip title="Log out" placement="right">
-          <IconButton size="small" onClick={logout}>
+          <IconButton size="small" onClick={logout} aria-label="Log out">
             <LogoutIcon fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -314,9 +406,10 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
     <Box
       component="nav"
       sx={{
-        width: SIDEBAR_WIDTH,
+        width: sidebarWidth,
         flexShrink: 0,
         height: "100vh",
+        position: "relative",
         borderRight: 1,
         borderColor: "divider",
         display: "flex",
@@ -324,6 +417,39 @@ const Sidebar = ({ mobileOpen, onCloseMobile }: SidebarProps) => {
       }}
     >
       {fullContent}
+      <Box
+        role="separator"
+        aria-label="Resize sidebar"
+        aria-orientation="vertical"
+        aria-valuemin={SIDEBAR_MIN_WIDTH}
+        aria-valuemax={SIDEBAR_MAX_WIDTH}
+        aria-valuenow={sidebarWidth}
+        tabIndex={0}
+        onMouseDown={handleResizeStart}
+        onKeyDown={handleResizeKeyDown}
+        sx={{
+          position: "absolute",
+          zIndex: 2,
+          top: 0,
+          right: -4,
+          width: 8,
+          height: "100%",
+          cursor: "col-resize",
+          outline: "none",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 3,
+            width: 2,
+            bgcolor: "primary.main",
+            opacity: 0,
+            transition: "opacity 120ms ease",
+          },
+          "&:hover::after, &:focus-visible::after": { opacity: 1 },
+        }}
+      />
       {dialogs}
     </Box>
   );

@@ -8,6 +8,7 @@ import {
   Menu,
   MenuItem,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -110,7 +111,8 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
         selected={isActive}
         onClick={() => navigate(`/pages/${node.id}`)}
         sx={{
-          pl: 1.5 + depth * 2,
+          pl: 0.5 + depth * 1.25,
+          pr: 0.5,
           py: 0.5,
           borderRadius: 1,
           opacity: isDragging ? 0.65 : 1,
@@ -122,7 +124,7 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
             event.stopPropagation();
             setExpanded((prev) => !prev);
           }}
-          sx={{ visibility: hasChildren ? "visible" : "hidden", mr: 0.25 }}
+          sx={{ visibility: hasChildren ? "visible" : "hidden", mr: 0.125, p: 0.5 }}
         >
           {expanded ? (
             <ExpandMoreIcon fontSize="small" />
@@ -131,7 +133,7 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
           )}
         </IconButton>
 
-        <Box sx={{ width: 20, textAlign: "center", mr: 0.75, flexShrink: 0 }}>
+        <Box sx={{ width: 19, textAlign: "center", mr: 0.5, flexShrink: 0 }}>
           {node.icon ?? <ArticleOutlinedIcon fontSize="small" />}
         </Box>
 
@@ -154,19 +156,50 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
             sx={{ flex: 1 }}
           />
         ) : (
-          <Typography
-            variant="body2"
-            noWrap
-            sx={{
-              flex: 1,
-              color: node.title ? "text.primary" : "text.secondary",
-            }}
-          >
-            {node.title || "Untitled"}
-          </Typography>
+          <Tooltip title={node.title || "Untitled"} placement="right" enterDelay={500}>
+            <Typography
+              variant="body2"
+              noWrap
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                color: node.title ? "text.primary" : "text.secondary",
+              }}
+            >
+              {node.title || "Untitled"}
+            </Typography>
+          </Tooltip>
         )}
 
-        <Box sx={{ display: "flex", flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            width: 30,
+            flexShrink: 0,
+            overflow: "hidden",
+            transition: "width 120ms ease",
+            ".MuiListItemButton-root:hover &, .MuiListItemButton-root:focus-within &": { width: 90 },
+          }}
+        >
+          <IconButton
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation();
+              setMenuAnchor(event.currentTarget);
+            }}
+            aria-label="Page options"
+            sx={{ p: 0.5 }}
+          >
+            <MoreHorizIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={handleAddSubpage}
+            aria-label="Add subpage"
+            sx={{ p: 0.5 }}
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
           <IconButton
             size="small"
             aria-label={`Reorder ${node.title || "Untitled"}`}
@@ -177,26 +210,10 @@ const PageTreeItem = ({ node, depth, reorderDisabled }: PageTreeItemProps) => {
             sx={{
               cursor: reorderDisabled ? "default" : isDragging ? "grabbing" : "grab",
               touchAction: "none",
+              p: 0.5,
             }}
           >
             <DragIndicatorIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={handleAddSubpage}
-            aria-label="Add subpage"
-          >
-            <AddIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={(event) => {
-              event.stopPropagation();
-              setMenuAnchor(event.currentTarget);
-            }}
-            aria-label="Page options"
-          >
-            <MoreHorizIcon fontSize="small" />
           </IconButton>
         </Box>
       </ListItemButton>
